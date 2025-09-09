@@ -186,15 +186,18 @@ load_project_config() {
 
 # Main command dispatcher
 execute_ado_command() {
-    # Try to load project-specific config first, then global
+    # Handle setup command first (doesn't need existing config)
+    if [ "$1" = "setup" ]; then
+        setup_global_config
+        return
+    fi
+    
+    # For all other commands, try to load project-specific config first, then global
     if ! load_project_config && ! load_global_config; then
         exit 1
     fi
     
     case "$1" in
-        "setup")
-            setup_global_config
-            ;;
         "list")
             echo -e "${BLUE}📋 Listing work items...${NC}"
             az boards query --wiql "SELECT [System.Id], [System.Title], [System.State], [System.AssignedTo], [System.WorkItemType] FROM WorkItems ORDER BY [System.Id] DESC"
