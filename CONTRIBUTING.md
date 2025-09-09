@@ -70,8 +70,13 @@ We welcome contributions from the community! This document provides guidelines f
 
 #### Development Process
 
-1. **Create a feature branch**
+1. **Create a feature branch from dev**
    ```bash
+   # Start from the dev branch (default branch)
+   git checkout dev
+   git pull origin dev
+   
+   # Create your feature branch
    git checkout -b feature/your-feature-name
    # or
    git checkout -b bugfix/issue-number-description
@@ -109,10 +114,13 @@ We welcome contributions from the community! This document provides guidelines f
    Fixes #issue-number"
    ```
 
-5. **Push and create a Pull Request**
+5. **Push and create a Pull Request to dev branch**
    ```bash
    git push origin feature/your-feature-name
    ```
+   
+   **Important**: All pull requests should be submitted against the `dev` branch, not `main`. 
+   The `main` branch is protected and only the repository owner can merge to it.
 
 #### Commit Message Convention
 
@@ -136,6 +144,25 @@ docs: update installation instructions for Windows 11
 
 refactor: improve error handling in ado-integration.sh
 ```
+
+#### Branching Strategy
+
+We use a three-branch workflow:
+
+- **`main`** - Production-ready code. Protected branch, only repository owner can merge.
+- **`staging`** - Pre-production testing. Used for release preparation.
+- **`dev`** - Active development. **Default branch for all pull requests.**
+
+**Workflow:**
+1. Contributors create feature branches from `dev`
+2. Pull requests are submitted to `dev` branch
+3. Repository owner merges `dev` → `staging` for testing
+4. Repository owner merges `staging` → `main` for releases
+
+**Branch Protection:**
+- `main` branch requires pull requests and prevents direct pushes
+- All CI checks must pass before merging
+- Only the repository owner (@abbeyseto) can approve merges to `main`
 
 #### Code Style Guidelines
 
