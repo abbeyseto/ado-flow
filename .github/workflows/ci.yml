@@ -53,14 +53,15 @@ jobs:
       if: matrix.os != 'windows-latest'
       run: chmod +x ./install.sh
 
-    - name: Test help command
-      shell: ${{ matrix.shell }}
-      run: |
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          .\install.ps1 -Help
-        else
-          ./install.sh --help
-        fi
+    - name: Test help command (Unix)
+      if: matrix.os != 'windows-latest'
+      shell: bash
+      run: ./install.sh --help
+
+    - name: Test help command (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: .\install.ps1 -Help
 
     - name: Validate script syntax (Unix)
       if: matrix.os != 'windows-latest'
