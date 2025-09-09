@@ -159,7 +159,7 @@ EOF
     
     # Test connection
     echo -e "${BLUE}🔍 Testing connection...${NC}"
-    if load_global_config && az boards query --wiql "SELECT [System.Id], [System.Title] FROM WorkItems" --top 1 &> /dev/null; then
+    if load_global_config && az boards query --wiql "SELECT [System.Id] FROM WorkItems WHERE [System.Id] > 0" &> /dev/null; then
         echo -e "${GREEN}✅ Azure DevOps integration configured successfully!${NC}"
         echo -e "Organization: $AZURE_DEVOPS_ORG_URL"
         echo -e "Project: $AZURE_DEVOPS_PROJECT"
