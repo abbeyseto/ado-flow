@@ -1,6 +1,6 @@
 {
   "name": "ado-flow",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Streamlined Azure DevOps workflow automation with intelligent work item management and Git integration",
   "keywords": [
     "ado-flow",
@@ -76,9 +76,6 @@
   "dependencies": {},
   "devDependencies": {
     "shellcheck": "^0.9.0"
-  },
-  "peerDependencies": {
-    "azure-cli": ">=2.0.0"
   },
   "config": {
     "installDir": "~/.ado-cli",
