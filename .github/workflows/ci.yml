@@ -2,9 +2,9 @@ name: ado-flow CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, staging, dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, staging, dev ]
   release:
     types: [ published ]
 
