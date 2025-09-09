@@ -1,0 +1,117 @@
+{
+  "name": "ado-flow",
+  "version": "1.0.0",
+  "description": "Streamlined Azure DevOps workflow automation with intelligent work item management and Git integration",
+  "keywords": [
+    "ado-flow",
+    "azure-devops",
+    "cli",
+    "workflow",
+    "work-items",
+    "git-integration",
+    "devops",
+    "azure",
+    "project-management",
+    "agile",
+    "scrum",
+    "automation"
+  ],
+  "homepage": "https://github.com/abbeyseto/ado-flow#readme",
+  "bugs": {
+    "url": "https://github.com/abbeyseto/ado-flow/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abbeyseto/ado-flow.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Adenle Abiodun",
+    "email": "adenleabbey@gmail.com",
+    "url": "https://github.com/abbeyseto"
+  },
+  "contributors": [
+    {
+      "name": "Your Name",
+      "email": "your.email@example.com",
+      "url": "https://github.com/abbeyseto"
+    }
+  ],
+  "main": "global-integration/ado-integration.sh",
+  "bin": {
+    "ado-install": "./INSTALL.sh",
+    "ado-install-windows": "./install.ps1"
+  },
+  "scripts": {
+    "install": "chmod +x ./INSTALL.sh && ./INSTALL.sh",
+    "install-windows": "powershell -ExecutionPolicy Bypass -File ./install.ps1",
+    "test": "echo 'Running tests...' && ./test/run-tests.sh",
+    "lint": "shellcheck global-integration/*.sh project-scripts/*.sh INSTALL.sh",
+    "docs": "echo 'Documentation available in docs/ directory'",
+    "clean": "echo 'Cleaning up...' && rm -rf ~/.ado-cli/temp"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "files": [
+    "global-integration/",
+    "project-scripts/",
+    "docs/",
+    "INSTALL.sh",
+    "install.ps1",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "shellcheck": "^0.9.0"
+  },
+  "peerDependencies": {
+    "azure-cli": ">=2.0.0"
+  },
+  "config": {
+    "installDir": "~/.ado-cli",
+    "configDir": "~/.claude"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/abbeyseto"
+  },
+  "preferGlobal": true,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "installation": {
+    "npm": {
+      "global": "npm install -g ado-flow",
+      "local": "npm install ado-flow"
+    },
+    "direct": {
+      "unix": "curl -sSL https://raw.githubusercontent.com/abbeyseto/ado-flow/main/install.sh | bash",
+      "windows": "iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/abbeyseto/ado-flow/main/install.ps1'))"
+    }
+  },
+  "platform-requirements": {
+    "unix": {
+      "shell": "bash >= 4.0",
+      "dependencies": ["curl", "git", "azure-cli"]
+    },
+    "windows": {
+      "shell": "PowerShell >= 5.1",
+      "dependencies": ["git", "azure-cli"],
+      "optional": ["wsl", "git-bash"]
+    }
+  }
+}

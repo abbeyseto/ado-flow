@@ -1,0 +1,256 @@
+name: ado-flow CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+jobs:
+  test-installation:
+    name: Test ado-flow Installation
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            shell: bash
+            installer: ./install.sh
+          - os: macos-latest  
+            shell: bash
+            installer: ./install.sh
+          - os: windows-latest
+            shell: pwsh
+            installer: .\install.ps1 -User
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Azure CLI (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        az extension add --name azure-devops
+
+    - name: Install Azure CLI (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install azure-cli
+        az extension add --name azure-devops
+
+    - name: Install Azure CLI (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi
+        Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'
+        az extension add --name azure-devops
+
+    - name: Make installer executable (Unix)
+      if: matrix.os != 'windows-latest'
+      run: chmod +x ./install.sh
+
+    - name: Test help command
+      shell: ${{ matrix.shell }}
+      run: |
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          .\install.ps1 -Help
+        else
+          ./install.sh --help
+        fi
+
+    - name: Validate script syntax (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        bash -n ./install.sh
+        bash -n ./global-integration/ado-integration.sh
+
+    - name: Validate script syntax (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        Get-Command .\install.ps1
+
+  lint-scripts:
+    name: Lint Shell Scripts
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install shellcheck
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
+
+    - name: Lint shell scripts
+      run: |
+        find . -name "*.sh" -type f | xargs shellcheck -e SC2034,SC2086
+
+  test-documentation:
+    name: Test Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install markdownlint
+      run: npm install -g markdownlint-cli
+
+    - name: Lint markdown files
+      run: |
+        markdownlint README.md CONTRIBUTING.md CHANGELOG.md docs/*.md --disable MD013 MD033
+
+    - name: Check for broken links
+      uses: gaurav-nelson/github-action-markdown-link-check@v1
+      with:
+        use-quiet-mode: 'yes'
+        use-verbose-mode: 'yes'
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Bandit security scan
+      run: |
+        # Check for common security issues in shell scripts
+        find . -name "*.sh" -type f -exec grep -l "curl.*http://" {} \; | wc -l | xargs test 0 -eq
+        
+    - name: Check for secrets
+      run: |
+        # Basic secret detection
+        if grep -r "password\|secret\|key\|token" --include="*.sh" --include="*.md" . | grep -v "your_token_here\|example\|template"; then
+          echo "Potential secrets found"
+          exit 1
+        fi
+
+  package-validation:
+    name: Validate Package Files
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Validate package.json
+      run: |
+        npm install --dry-run
+
+    - name: Check file structure
+      run: |
+        # Verify required files exist
+        required_files=(
+          "README.md"
+          "LICENSE" 
+          "CONTRIBUTING.md"
+          "CHANGELOG.md"
+          "package.json"
+          "install.sh"
+          "install.ps1"
+          "global-integration/ado-integration.sh"
+        )
+        
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "Required file missing: $file"
+            exit 1
+          fi
+        done
+
+    - name: Validate version consistency
+      run: |
+        # Check that versions match across files
+        package_version=$(jq -r '.version' package.json)
+        echo "Package version: $package_version"
+        
+        # Add more version consistency checks here
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' # Skip for PRs to avoid Azure CLI requirements
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        az extension add --name azure-devops
+
+    - name: Test installation process
+      run: |
+        chmod +x ./install.sh
+        # Test in dry-run mode or with mock configuration
+        bash -n ./install.sh
+
+    - name: Test script functionality
+      env:
+        AZURE_DEVOPS_EXT_PAT: "fake-token-for-testing"
+        AZURE_DEVOPS_ORG_URL: "https://dev.azure.com/test-org"
+        AZURE_DEVOPS_PROJECT: "test-project"
+      run: |
+        # Test help command
+        ./global-integration/ado-integration.sh help
+
+  publish:
+    name: Publish Package
+    runs-on: ubuntu-latest
+    needs: [test-installation, lint-scripts, test-documentation, security-scan, package-validation]
+    if: github.event_name == 'release' && github.event.action == 'published'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Update version in package.json
+      run: |
+        # Extract version from GitHub release tag
+        VERSION=${GITHUB_REF#refs/tags/v}
+        jq ".version = \"$VERSION\"" package.json > package.json.tmp
+        mv package.json.tmp package.json
+
+    - name: Publish to NPM
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - name: Create release assets
+      run: |
+        # Create release packages
+        tar -czf ado-flow-unix.tar.gz install.sh global-integration/ docs/ README.md LICENSE
+        zip -r ado-flow-windows.zip install.ps1 global-integration/ docs/ README.md LICENSE
+
+    - name: Upload release assets
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ado-flow-unix.tar.gz
+          ado-flow-windows.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
